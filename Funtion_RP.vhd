@@ -1,16 +1,16 @@
 library ieee;
-use ieee.std_logic_1164.all
-use ieee.std_logic_arith.all
-use ieee.std_logic_unsigned.all
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
 
-entity RP is
+entity RP_Box is
     port(
         x: in std_logic_vector(63 downto 0);
         rp_out: out std_logic_vector(63 downto 0)
     );
-end RP;
+end RP_Box;
 
-architecture Behavioral of RP is
+architecture Behavioral of RP_Box is
 signal x0, x1, x2, x3, x4, x5, x6, x7: std_logic_vector(7 downto 0);
 begin
     x0 <= x(63 downto 56);

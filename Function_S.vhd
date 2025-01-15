@@ -1,16 +1,16 @@
 library ieee;
-use ieee.std_logic_1164.all
-use ieee.std_logic_arith.all
-use ieee.std_logic_unsigned.all
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
 
-entity SBox is
+entity S_Box is
     port (
         x: in std_logic_vector(3 downto 0);
         s_out: out std_logic_vector(3 downto 0)
     );
-end entity SBox;
+end entity S_Box;
 
-arhitecture Behavioral of SBox is
+architecture Behavioral of S_Box is
 begin
     process(x)
     begin
