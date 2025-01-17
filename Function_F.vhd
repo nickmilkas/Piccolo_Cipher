@@ -19,27 +19,24 @@ architecture Behavioral of F_Box is
         );
     end component;
 
-    -- Signals for S-Box outputs
+    -- 1st S-Box outputs
     signal s0, s1, s2, s3 : std_logic_vector(3 downto 0);
-    -- Signals for Diffusion Matrix outputs
+    -- Diffusion Matrix outputs
     signal t0, t1, t2, t3 : std_logic_vector(3 downto 0);
-
-     -- Signals for Galois Multiplication
-     signal g : std_logic_vector(3 downto 0);
-     signal temp_a, temp_b : std_logic_vector(3 downto 0);
-     signal high_bit_set : std_logic;
+    -- 2nd S-Box outputs
+    signal f0, f1, f2, f3 : std_logic_vector(3 downto 0);
 
     -- Multiplication in GF(2^4)
     function GF_Mul(a : std_logic_vector(3 downto 0); b : std_logic_vector(3 downto 0)) return std_logic_vector is
-        variable g : std_logic_vector(3 downto 0) := (others => '0'); -- Result
-        variable temp_a : std_logic_vector(3 downto 0);
-        variable temp_b : std_logic_vector(3 downto 0);
-        constant GF_POLY : std_logic_vector(4 downto 0) := "10011"; -- x^4 + x + 1
+        variable g : std_logic_vector(7 downto 0) := (others => '0'); -- Result
+        variable temp_a : std_logic_vector(7 downto 0);
+        variable temp_b : std_logic_vector(7 downto 0);
+        constant GF_POLY : std_logic_vector(7 downto 0) := "00010011"; -- x^4 + x + 1
         variable high_bit_set : std_logic;
-    begin
 
-        temp_a := a;
-        temp_b := b;
+    begin
+        temp_a := "0000" & a(3 downto 0);
+        temp_b := "0000" & b(3 downto 0);
 
         -- Perform 4 iterations (as we are in GF(2^4))
         for i in 0 to 3 loop
@@ -52,7 +49,7 @@ architecture Behavioral of F_Box is
             high_bit_set := temp_a(3);
 
             -- Shift temp_a left by 1
-            temp_a := temp_a(2 downto 0) & '0';
+            temp_a := temp_a(6 downto 0) & '0';
 
             -- If high bit was set, XOR temp_a with the polynomial
             if high_bit_set = '1' then
@@ -60,14 +57,15 @@ architecture Behavioral of F_Box is
             end if;
 
             -- Shift temp_b right by 1
-            temp_b := '0' & temp_b(3 downto 1);
+            temp_b := '0' & temp_b(7 downto 1);
         end loop;
 
-        return g; 
+        return g(3 downto 0); 
     end function;
 
 begin
-    -- Instantiate S-Box components for each 4-bit input chunk
+
+    -- 1st S-Box 
     U0: S_Box port map(x => x(15 downto 12), s_out => s0);
     U1: S_Box port map(x => x(11 downto 8), s_out => s1);
     U2: S_Box port map(x => x(7 downto 4), s_out => s2);
@@ -79,6 +77,11 @@ begin
     t2 <= GF_Mul("0001", s0) xor GF_Mul("0001", s1) xor GF_Mul("0010", s2) xor GF_Mul("0011", s3);
     t3 <= GF_Mul("0011", s0) xor GF_Mul("0001", s1) xor GF_Mul("0001", s2) xor GF_Mul("0010", s3);
 
-    -- Combine the results into the output Y
-    f_out <= t0 & t1 & t2 & t3;
+    -- 2nd S-Box 
+    U4: S_Box port map(x => t0, s_out => f0);
+    U5: S_Box port map(x => t1, s_out => f1);
+    U6: S_Box port map(x => t2, s_out => f2);
+    U7: S_Box port map(x => t3, s_out => f3);
+
+    f_out <= f0 & f1 & f2 & f3;
 end Behavioral;
