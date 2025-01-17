@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Piccolo",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/piccolo",  // Path to your executable
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,  // If you want an external console
+            "MIMode": "gdb",
+            "miDebuggerPath": "C:/MinGW/bin/gdb.exe",  // Path to MinGW GDB
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build",  // Ensure this matches the label in tasks.json
+            "miDebuggerArgs": "",
+            "logging": {
+                "moduleLoad": false,
+                "trace": true,
+                "engineLogging": true
+            }
+        }
+    ]
+}
