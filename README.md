@@ -1,2 +1,2 @@
-# Piccolo_Cipher
+# Piccolo Cipher Implementation in VHDL
 test
