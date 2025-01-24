@@ -5,12 +5,14 @@ use ieee.std_logic_unsigned.all;
 
 entity iterative_stage is
     port(
-        clk           : in std_logic;
-        reset         : in std_logic;
-        modified_X    : in std_logic_vector(63 downto 0);
-        rk_first, rk_second : in std_logic_vector(15 downto 0);
-        choose        : in std_logic;
-        new_modified  : out std_logic_vector(63 downto 0)
+        clk               : in std_logic;
+        reset             : in std_logic;
+        modified_X        : in std_logic_vector(63 downto 0);
+        rk_row            : in std_logic_vector(31 downto 0);
+        activate          : in std_logic_vector(3 downto 0);
+        choose            : in std_logic;
+        new_modified      : out std_logic_vector(63 downto 0);
+        iterative_finished: out std_logic
     );
 end iterative_stage;
 
@@ -58,15 +60,17 @@ begin
     U2: F_Box port map(x => x_temp(31 downto 16), f_out => f2);
 
     internal_1 <= std_logic_vector(unsigned(x_temp(63 downto 48)));
-    internal_2 <= std_logic_vector(unsigned(x_temp(47 downto 32)) xor unsigned(f1) xor unsigned(rk_first));
+    internal_2 <= std_logic_vector(unsigned(x_temp(47 downto 32)) xor unsigned(f1) xor unsigned(rk_row(31 downto 16)));
     internal_3 <= std_logic_vector(unsigned(x_temp(31 downto 16)));
-    internal_4 <= std_logic_vector(unsigned(x_temp(15 downto 0)) xor unsigned(f2) xor unsigned(rk_second));
+    internal_4 <= std_logic_vector(unsigned(x_temp(15 downto 0)) xor unsigned(f2) xor unsigned(rk_row(15 downto 0)));
+
     before_rp <= internal_1 & internal_2 & internal_3 & internal_4;
 
     RP_Part: RP_Box port map(x => before_rp, rp_out => after_rp);
 
     U3: iter_reg port map(clk => clk, reset => reset, d => after_rp, q => reg_q);
 
-    new_modified <= after_rp;
+    new_modified <= after_rp when (unsigned(activate) >= 1) else (others => 'X');
+    iterative_finished <= '1' when (unsigned(activate) >= 1) else 'X';
 
 end iterative_stage_arch;

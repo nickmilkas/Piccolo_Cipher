@@ -5,9 +5,11 @@ use ieee.numeric_std.all;
 entity final_stage is 
     port(
         modified_X: in std_logic_vector(63 downto 0);
-        wk2, wk3: in std_logic_vector(15 downto 0);
-        rk_pl, rk_l: in std_logic_vector(15 downto 0);
-        Y: out std_logic_vector(63 downto 0)
+        wk_row: in std_logic_vector(31 downto 0);
+        rk_row: in std_logic_vector(31 downto 0);
+        activate: in std_logic_vector(3 downto 0);
+        Y: out std_logic_vector(63 downto 0);
+        final_finished: out std_logic
     );
 end final_stage;
 
@@ -24,14 +26,16 @@ architecture final_stage_arch of final_stage is
     signal f1, f2: std_logic_vector(15 downto 0);
 
 begin
+
     U1: F_Box port map(x => modified_X(63 downto 48), f_out => f1);
     U2: F_Box port map(x => modified_X(31 downto 16), f_out => f2);
 
-    internal_1 <= std_logic_vector(unsigned(modified_X(63 downto 48)) xor unsigned(wk2));
-    internal_2 <= std_logic_vector(unsigned(modified_X(47 downto 32)) xor unsigned(f1) xor unsigned(rk_pl));
-    internal_3 <= std_logic_vector(unsigned(modified_X(31 downto 16)) xor unsigned(wk3));
-    internal_4 <= std_logic_vector(unsigned(modified_X(15 downto 0)) xor unsigned(f2) xor unsigned(rk_l));
+    internal_1 <= std_logic_vector(unsigned(modified_X(63 downto 48)) xor unsigned(wk_row(31 downto 16)));
+    internal_2 <= std_logic_vector(unsigned(modified_X(47 downto 32)) xor unsigned(f1) xor unsigned(rk_row(31 downto 16)));
+    internal_3 <= std_logic_vector(unsigned(modified_X(31 downto 16)) xor unsigned(wk_row(15 downto 0)));
+    internal_4 <= std_logic_vector(unsigned(modified_X(15 downto 0)) xor unsigned(f2) xor unsigned(rk_row(15 downto 0)));
 
-    Y <= internal_1 & internal_2 & internal_3 & internal_4;
+    Y <= (internal_1 & internal_2 & internal_3 & internal_4) when (unsigned(activate) >= 1) else (others => 'X');
+    final_finished <= '1' when (unsigned(activate) >= 1) else '0';
 
 end final_stage_arch;
