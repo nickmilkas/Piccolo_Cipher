@@ -2,11 +2,19 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+package key_reg_pkg is
+    type reg_array is array (natural range <>) of std_logic_vector(31 downto 0);
+end package key_reg_pkg;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.key_reg_pkg.all;
+
 entity final_stage is 
     port(
         modified_X: in std_logic_vector(63 downto 0);
-        wk_row: in std_logic_vector(31 downto 0);
-        rk_row: in std_logic_vector(31 downto 0);
+        wk_rk_rows: in reg_array(0 to 1);
         activate: in std_logic_vector(3 downto 0);
         Y: out std_logic_vector(63 downto 0);
         final_finished: out std_logic
@@ -24,8 +32,12 @@ architecture final_stage_arch of final_stage is
 
     signal internal_1, internal_2, internal_3, internal_4: std_logic_vector(15 downto 0);
     signal f1, f2: std_logic_vector(15 downto 0);
+    signal rk_row, wk_row: std_logic_vector(31 downto 0);
 
 begin
+
+    rk_row <= wk_rk_rows(0);
+    wk_row <= wk_rk_rows(1);
 
     U1: F_Box port map(x => modified_X(63 downto 48), f_out => f1);
     U2: F_Box port map(x => modified_X(31 downto 16), f_out => f2);
