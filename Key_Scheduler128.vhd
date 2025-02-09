@@ -3,11 +3,12 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity key_scheduler128 is
-    Port (
-        clk         : in std_logic;
-        reset       : in std_logic;
-        key_in      : in std_logic_vector(127 downto 0); 
-        keys_out    : out std_logic_vector(31 downto 0) -- 32-bit έξοδος: key1 | key2
+    port (
+        clk      : in std_logic;
+        reset    : in std_logic;
+        enable   : in std_logic_vector(2 downto 0); -- Enable with State Machine output
+        key_in   : in std_logic_vector(127 downto 0); 
+        keys_out : out std_logic_vector(31 downto 0) -- 32-bit έξοδος: key1 | key2
     );
 end key_scheduler128;
 
@@ -16,9 +17,9 @@ architecture Behavioral of key_scheduler128 is
     type subkey_array is array (0 to 7) of std_logic_vector(15 downto 0);
     signal k : subkey_array; -- 16-bit subkeys
     --signal k0, k1, k2, k3, k4, k5, k6, k7 : std_logic_vector(15 downto 0);  -- 16-bit subkeys
-    signal round_counter      : integer range 0 to 33 := 0;    -- Μετρητής για 33 cycles (2 κύκλου whk, 31 κύκλοι για rk)
-    signal con128_r            : std_logic_vector(31 downto 0); -- 32-bit constant for the current round
-    signal keys               : std_logic_vector(31 downto 0); -- Temporary output for key1 | key2
+    signal round_counter: integer range 0 to 33 := 0;    -- Μετρητής για 33 cycles (2 κύκλου whk, 31 κύκλοι για rk)
+    signal con128_r     : std_logic_vector(31 downto 0); -- 32-bit constant for the current round
+    signal keys         : std_logic_vector(31 downto 0); -- Temporary output for key1 | key2
 
  -- Function to generate 32-bit constant values (con(2i) | con(2i+1))
     function generate_con128(i: integer) return std_logic_vector is
@@ -59,35 +60,37 @@ begin
             con128_r <= (others => '0');
             keys <= (others => '0');
         elsif rising_edge(clk) then
-            -- Generate constants for the current round
-            con128_r <= generate_con128(round_counter);
-            -- Generate keys and output based on round counter
-            case round_counter is
-                when 0 =>
-                    
-                    keys <= k(0)(15 downto 8) & k(1)(7 downto 0) & k(1)(15 downto 8) & k(0)(7 downto 0); -- Whitening keys wk0 | wk1
-                when 32 =>
-                    keys <= k(4)(15 downto 8) & k(7)(7 downto 0) & k(7)(15 downto 8) & k(4)(7 downto 0); -- Final whitening keys wk2 | wk3
-                when others =>
-                    
-                    if round_counter < 32 then
-                        -- Compute round keys
-                        if ((round_counter-1)+2 mod 8) = 0 then
-                            k <= (k(2), k(1), k(6), k(7), k(0), k(3), k(4), k(5)); -- Συνδυασμός 8 subkeys
-                        end if;
+            if enable = "000" then
+                -- Generate constants for the current round
+                con128_r <= generate_con128(round_counter);
+                -- Generate keys and output based on round counter
+                case round_counter is
+                    when 0 =>
                         
-                        -- XOR with round constant
-                        keys(31 downto 16) <= k((round_counter-1+2) mod 8) xor con128_r(31 downto 16);
-                        keys(15 downto 0)  <= k((round_counter-1+3) mod 8) xor con128_r(15 downto 0);
-                    end if;
-            end case;
+                        keys <= k(0)(15 downto 8) & k(1)(7 downto 0) & k(1)(15 downto 8) & k(0)(7 downto 0); -- Whitening keys wk0 | wk1
+                    when 32 =>
+                        keys <= k(4)(15 downto 8) & k(7)(7 downto 0) & k(7)(15 downto 8) & k(4)(7 downto 0); -- Final whitening keys wk2 | wk3
+                    when others =>
+                        
+                        if round_counter < 32 then
+                            -- Compute round keys
+                            if ((round_counter-1)+2 mod 8) = 0 then
+                                k <= (k(2), k(1), k(6), k(7), k(0), k(3), k(4), k(5)); -- Συνδυασμός 8 subkeys
+                            end if;
+                            
+                            -- XOR with round constant
+                            keys(31 downto 16) <= k((round_counter-1+2) mod 8) xor con128_r(31 downto 16);
+                            keys(15 downto 0)  <= k((round_counter-1+3) mod 8) xor con128_r(15 downto 0);
+                        end if;
+                end case;
 
-            -- Update round counter
-            if round_counter < 33 then
-                round_counter <= round_counter + 1;
-            else
-                round_counter <= 0; -- Reset after all rounds
-                con128_r <= (others => '0');
+                -- Update round counter
+                if round_counter < 33 then
+                    round_counter <= round_counter + 1;
+                else
+                    round_counter <= 0; -- Reset after all rounds
+                    con128_r <= (others => '0');
+                end if;
             end if;
         end if;
     end process;
