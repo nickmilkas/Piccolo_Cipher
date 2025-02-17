@@ -16,7 +16,7 @@ entity main is
     );
     end main;
 
-architecture Behavioral of main is 
+architecture Piccolo of main is 
 
     component fsm_diagram is
         port(
@@ -143,12 +143,13 @@ architecture Behavioral of main is
     signal modified_X_reg, iter_X_reg: std_logic_vector(63 downto 0);
     --signal key_reg_full: std_logic;
     signal key_reg_start ,key_reg_finish: std_logic;
+    signal write_fin, enc_dec_fin: std_logic;
 
 
     
     
 begin
-
+    --- να αλλαχθουν τα port map του fsm
     fsm_ctrl: fsm_diagram port map(
         clk => clk, reset => reset, key_reg => key_reg_finish, 
         init_fin => initial_finished, iter_fin => iterative_finished, last_fin => final_finished,
@@ -167,7 +168,7 @@ begin
         clk => clk, rst => rst, load_en => plain_ready, input_bits => plain_out64, output_bits => plain_reg
     );
 
-
+    --- to add selection before
     key_sched80: key_scheduler80 port map(
         clk => clk, reset => reset, enable => fsm_control, key_in => key_out80, keys_out => keys_reg80
     );
@@ -177,16 +178,17 @@ begin
     );
 
     
-    selected_write_data <= keys_reg80 when (mode(0) = '0') else keys_reg128;
-    --fix
+    selected_write_data <= keys_reg80 when (mode(0) = '0') else keys_reg128; --this to be before the 2 key_schedulers
+   
     key_reg: key_reg port map(
-        clk => clk, rst => reset, write_data => selected_write_data, read_addr0 => 000000, read_addr1 => 000001,
-        write_enable => key_ready, read_enable => *___*, data_1 => wk0 | wk1, data_2 => rk0 | rk1 , is_full => 
+        clk => clk, rst => reset, write_data => selected_write_data, internal_mode => fsm_control, mode => mode, 
+        write_fin => write_fin, enc_dec_fin => enc_dec_fin, out_initial => array_inital, out_iter1 => array_iterative1,
+        out_iter2 => array_iterative2, out_final => array_final
     );
 
 
 
-
+    ---- FIX ALL
     -------- G function Data Proccesing Part --------
     init_stage: initial_stage port map(
         plain_text => plain_reg, wk_row => keys_reg80, rk_row => keys_reg80,
@@ -217,9 +219,10 @@ begin
         activate => fsm_control(2 downto 0), Y => cipher, final_finished => final_finished
     );
     -------- END OF G function --------
+    
+    ---- END FIX
 
 
-
-end Behavioral;
+end Piccolo;
 
 

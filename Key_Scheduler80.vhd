@@ -17,7 +17,7 @@ architecture Behavioral of key_scheduler80 is
     signal k0, k1, k2, k3, k4 : std_logic_vector(15 downto 0);  -- 16-bit subkeys
     signal round_counter      : integer range 0 to 27 := 0;    -- Μετρητής για 27 cycles (2 κύκλου whk, 25 κύκλοι για rk)
     signal con80_r            : std_logic_vector(31 downto 0); -- 32-bit constant for the current round
-    signal keys               : std_logic_vector(31 downto 0); -- Temporary output for key1 | key2
+    --signal keys               : std_logic_vector(31 downto 0); -- Temporary output for key1 | key2
 
     -- Function to generate 32-bit constant values (con(2i) | con(2i+1))
     function generate_con80(i: integer) return std_logic_vector is
@@ -42,6 +42,7 @@ architecture Behavioral of key_scheduler80 is
 begin
     -- Process για σειριακή έξοδο key_scheduling
     process(clk, reset)
+        variable keys : std_logic_vector(31 downto 0); -- Χρήση `variable` για αποφυγή καθυστερήσεων
     begin
         if reset = '1' then
             -- Reset state
@@ -52,7 +53,7 @@ begin
             k4 <= key_in(15 downto 0);
             round_counter <= 0;
             con80_r <= (others => '0');
-            keys <= (others => '0');
+            keys := (others => '0');
         elsif rising_edge(clk) then
             if enable = "000" then
                 -- Generate constants for the current round
@@ -61,25 +62,25 @@ begin
                 case round_counter is
                     when 0 =>
                         
-                        keys <= k0(15 downto 8) & k1(7 downto 0) & k1(15 downto 8) & k0(7 downto 0); -- Whitening keys wk0 | wk1
+                        keys := k0(15 downto 8) & k1(7 downto 0) & k1(15 downto 8) & k0(7 downto 0); -- Whitening keys wk0 | wk1
                     when 26 =>
-                        keys <= k4(15 downto 8) & k3(7 downto 0) & k3(15 downto 8) & k4(7 downto 0); -- Final whitening keys wk2 | wk3
+                        keys := k4(15 downto 8) & k3(7 downto 0) & k3(15 downto 8) & k4(7 downto 0); -- Final whitening keys wk2 | wk3
                     when others =>
-                        
                         if round_counter < 26 then
+
                             -- Compute round keys
-                            case round_counter-1 mod 5 is
+                            case (round_counter-1) mod 5 is
                                 when 0 | 2 =>
-                                    keys <= k2 & k3;
+                                    keys := k2 & k3;
                                 when 1 | 4 =>
-                                    keys <= k0 & k1;
+                                    keys := k0 & k1;
                                 when 3 =>
-                                    keys <= k4 & k4;
+                                    keys := k4 & k4;
                                 when others => null;
                             end case;
 
                             -- XOR with round constant
-                            keys <= keys xor con80_r;
+                            keys := keys xor con80_r;
                         end if;
                 end case;
 
@@ -92,9 +93,10 @@ begin
                 end if;
             end if;
         end if;
+        keys_out <= keys;
     end process;
 
     -- Σύνδεση εξόδου
-    keys_out <= keys;
+    --keys_out <= keys;
 
 end Behavioral;
