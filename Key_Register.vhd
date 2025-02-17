@@ -30,9 +30,10 @@ entity key_reg is
         write_enable  : in std_logic;
         read_enable   : in std_logic;
         mode          : in std_logic_vector(1 downto 0);
+		en_enc_decr   : in std_logic;
         out_initial   : out reg_array(0 to 1);
-        out_iter1  	  : out std_logic_vector(31 downto 0);
-        out_iter2  	  : out std_logic_vector(31 downto 0);
+        out_iter1  	  : out reg_array(0 to 14);
+		out_iter2  	  : out reg_array(0 to 13);
         out_final     : out reg_array(0 to 1)
     );
 end key_reg;
@@ -42,7 +43,7 @@ architecture key_reg_arch of key_reg is
     signal write_addr : std_logic_vector(5 downto 0) := (others => '0');
     signal iter_counter : integer range 0 to 14 := 0;  
 begin
-    process(clk)
+    process(clk,rst)
     begin
         if rising_edge(clk) then
             if write_enable = '1' then
@@ -60,23 +61,58 @@ begin
     end process;
 	
 	
-	----------------------------
-	-----  ENC/DECR PART----------
-	----------------------------
-    process(clk)
+	---------Check Decryption Part-------------------
+	
+	process(clk,rst)
+		variable temp: reg_array(0 to 32);
+		variable valid_lines : integer;
+		variable counter     : integer := 0;
+		variable temp_rk: std_logic_vector(31 downto 0);
+	begin
+		if rising_edge(clk) then
+			if en_enc_decr = '1' and mode(0)='1' then
+				if mode(1) = '1' then
+					valid_lines := 33;
+				else 
+					valid_lines := 27;
+					
+				end if;
+				
+				temp(0) := registers(valid_lines-1);
+				temp(valid_lines-1) := registers(0);
+				
+				for i in 1 to valid_lines - 2 loop
+                    if (i mod 2) = 0 then
+                        temp(i) := registers(valid_lines - 2 - counter);
+                    else
+						temp_rk := registers(valid_lines - 2 - counter)(15 downto 0)&registers(valid_lines - 2 - counter)(31 downto 16);
+                        temp(i) := temp_rk;
+                    end if;
+                    counter := counter + 1;
+                end loop;
+				registers <= temp;	
+			end if;
+		end if;
+	end process;
+		
+	
+	----------End Decryption Part--------------------
+    
+	process(clk,rst)
         variable valid_lines : integer;
+		variable temp_iter2  : reg_array(0 to 13);
     begin
         if rising_edge(clk) then
             if read_enable = '1' then
                 if rst = '1' then
                     out_initial  <= (others => (others => '0'));
-                    out_iter1 <= (others => '0');
-                    out_iter2 <= (others => '0');
+                    out_iter1 <= (others => (others => '0'));
+                    out_iter2 <= (others => (others => '0'));
                     out_final    <= (others => (others => '0'));
                     iter_counter <= 0;
                 else
                     -- Determine the number of valid lines based on mode
-                    if mode(1) = '0' then
+                    if mode(1) = '1' then
                         valid_lines := 33;
                     else
                         valid_lines := 27;
@@ -87,19 +123,11 @@ begin
                     out_final   <= registers(valid_lines - 2 to valid_lines - 1);
 
                     -- The above lines are for the outputs for 2 iterative stages
-                    out_iter1 <= registers(2 + iter_counter);
+                    out_iter1 <= registers(2 to 16);
 					
-                    if (17 + iter_counter) < (valid_lines - 2) then
-                        out_iter2 <= registers(17 + iter_counter);
-                    else
-                        out_iter2 <= (others => '0');
-                    end if;
-
-                    if iter_counter = 14 then
-                        iter_counter <= 0;
-                    else
-                        iter_counter <= iter_counter + 1;
-                    end if;
+					temp_iter2 := (others => (others => '0'));
+                    temp_iter2(0 to valid_lines - 19) := registers(17 to valid_lines - 3);
+                    out_iter2 <= temp_iter2;
                 end if;
             end if;
         end if;
