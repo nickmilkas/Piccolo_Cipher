@@ -16,11 +16,12 @@ use work.initial_stage_pkg.all;
 
 entity initial_stage is 
     port(
+		clk				: in std_logic;
+		reset			: in std_logic;
         plain_text      : in  std_logic_vector(63 downto 0);
-        wk_rk_row       : in  two_line_array;
-        activate        : in  std_logic_vector(3 downto 0);
-        modified_X      : out std_logic_vector(63 downto 0);
-        initial_finished: out std_logic
+        init_keys       : in  two_line_array;
+        internal_mode   : in  std_logic_vector(2 downto 0);
+        modified_X      : out std_logic_vector(63 downto 0)
     );
 end initial_stage;
 
@@ -46,9 +47,9 @@ architecture initial_stage_arch of initial_stage is
     signal wk_row, rk_row: std_logic_vector(31 downto 0);
 
 begin
-
-    wk_row <= wk_rk_row(0);
-    rk_row <= wk_rk_row(1);
+	
+    wk_row <= init_keys(0);
+    rk_row <= init_keys(1);
 
     internal_1 <= std_logic_vector(unsigned(plain_text(63 downto 48)) xor unsigned(wk_row(31 downto 16)));
     internal_3 <= std_logic_vector(unsigned(plain_text(31 downto 16)) xor unsigned(wk_row(15 downto 0)));
@@ -61,8 +62,15 @@ begin
 
     before_rp <= internal_1 & internal_2 & internal_3 & internal_4;
     RP_Part: RP_Box port map(x => before_rp, rp_out => after_rp);
-
-    modified_X       <= after_rp when (unsigned(activate) >= 1) else (others => 'X');
-    initial_finished <= '1'    when (unsigned(activate) >= 1) else '0';
-
+	
+	process(clk,reset)
+	begin
+		if reset = '1' then
+			modified_X <= (others => 'U');
+		elsif rising_edge(clk) then
+			if internal_mode = "011" then
+				modified_X <= after_rp;
+			end if;
+		end if;
+	end process;
 end initial_stage_arch;
