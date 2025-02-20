@@ -12,12 +12,12 @@ entity fsm_diagram is
 end fsm_diagram;
 
 architecture fsm_diagram_arch of fsm_diagram is
-    type state_type is (A, B, C, D, E);
+    type state_type is (A, B, C, D);
     signal state: state_type;
     signal counter: std_logic_vector(4 downto 0) := (others => '0');
     signal shift_signal: std_logic := '0';
 begin
-    process(clk, reset) --, in_ctrl, write_fin, enc_dec_fin, read_enable
+    process(clk, reset) 
     begin
         if reset = '1' then
             state <= A;
@@ -33,20 +33,13 @@ begin
                     end if;
 
                 when B  =>  
-                    if write_fin = '1' then
+                    if write_fin = '1' and enc_dec_fin = '1' then
                         state <= C;
-                    elsif write_fin = '0' then
+                    elsif write_fin = '0' or enc_dec_fin = '0' then
                         state <= B;
                     end if;
 
-                when C =>
-                    if enc_dec_fin = '1' then
-                        state <= D;
-                    elsif enc_dec_fin = '0' then
-                        state <= C; 
-                    end if;
-
-                when D  =>  
+                when C  =>  
                     if read_enable = '1' then
                         if counter < "01110" then
                             counter <= std_logic_vector(unsigned(counter) + 1);
@@ -55,7 +48,7 @@ begin
                         end if;
                     end if;
 
-                when E  =>  
+                when D  =>  
                     shift_signal <= '1';
                     counter <= (others => '0');
                     state <= D;
@@ -74,8 +67,6 @@ begin
                 fsm_out <= "010";
             when D => 
                 fsm_out <= "011";
-            when E => 
-                fsm_out <= "100";
         end case;
 
         count_out <= counter;
