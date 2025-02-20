@@ -6,22 +6,31 @@ entity reg_nbit is
     port(
         clk     : in  std_logic;
         rst     : in  std_logic;
-        load_en : in  std_logic;
+        data_proc: in  std_logic;
+        shift   : in  std_logic;
         input_bits       : in  std_logic_vector(WIDTH-1 downto 0);
         output_bits       : out std_logic_vector(WIDTH-1 downto 0)
     );
 end reg_nbit;
 
 architecture reg_nbit_arch of reg_nbit is
+    signal input_store : std_logic_vector(WIDTH-1 downto 0);
 begin
     process(clk, rst)
     begin
         if rst = '1' then
             output_bits <= (others => 'X');
         elsif rising_edge(clk) then
-            if load_en = '1' then
-                output_bits <= input_bits;
+            input_store <= input_bits;
+            if data_proc = '1' then
+                if shift = '1' then
+                    output_bits <= input_store;
+                end if;
+            else
+                output_bits <= input_store;
             end if;
+                
+            
         end if;
     end process;
 end reg_nbit_arch;

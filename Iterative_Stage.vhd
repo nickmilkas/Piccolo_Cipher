@@ -52,12 +52,15 @@ architecture iterative_stage_arch of iterative_stage is
         );
     end component;
 
-    component iter_reg is
+    component reg_nbit is
+        generic(WIDTH : integer := 64);
         port(
-            clk   : in std_logic;
-            reset : in std_logic;
-            d     : in std_logic_vector(63 downto 0);
-            q     : out std_logic_vector(63 downto 0)
+            clk        : in  std_logic;
+            rst        : in  std_logic;
+            data_proc  : in  std_logic;
+            shift      : in  std_logic;
+            input_bits : in  std_logic_vector(WIDTH-1 downto 0);
+            output_bits: out std_logic_vector(WIDTH-1 downto 0)
         );
     end component;
 
@@ -88,7 +91,7 @@ begin
 
     RP_Part: RP_Box port map(x => before_rp, rp_out => after_rp);
 
-    U3: iter_reg port map(clk => clk, reset => reset, d => after_rp, q => reg_q);
+    U3: reg_nbit port map(clk => clk, rst => reset, data_proc => '0', shift => '1', input_bits => after_rp, output_bits => reg_q);
 
     process(clk, reset)
     begin

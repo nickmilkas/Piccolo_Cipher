@@ -7,6 +7,7 @@ entity key_scheduler80 is
         clk      : in std_logic;
         reset    : in std_logic;
         enable   : in std_logic_vector(2 downto 0); -- Enable with State Machine output
+        mode     : in std_logic; -- 0: key80 | 1: key128
         key_in   : in std_logic_vector(79 downto 0); 
         keys_out : out std_logic_vector(31 downto 0) -- 32-bit έξοδος: key1 | key2
     );
@@ -14,7 +15,7 @@ end key_scheduler80;
 
 architecture Behavioral of key_scheduler80 is
     -- Internal signals
-    signal k0, k1, k2, k3, k4 : std_logic_vector(15 downto 0);  -- 16-bit subkeys
+    --signal k0, k1, k2, k3, k4 : std_logic_vector(15 downto 0);  -- 16-bit subkeys
     signal round_counter      : integer range 0 to 27 := 0;    -- Μετρητής για 27 cycles (2 κύκλου whk, 25 κύκλοι για rk)
     signal con80_r            : std_logic_vector(31 downto 0); -- 32-bit constant for the current round
     --signal keys               : std_logic_vector(31 downto 0); -- Temporary output for key1 | key2
@@ -43,19 +44,25 @@ begin
     -- Process για σειριακή έξοδο key_scheduling
     process(clk, reset)
         variable keys : std_logic_vector(31 downto 0); -- Χρήση `variable` για αποφυγή καθυστερήσεων
+        variable k0, k1, k2, k3, k4 : std_logic_vector(15 downto 0);  -- 16-bit subkeys
     begin
-        if reset = '1' then
-            -- Reset state
-            k0 <= key_in(79 downto 64);
-            k1 <= key_in(63 downto 48);
-            k2 <= key_in(47 downto 32);
-            k3 <= key_in(31 downto 16);
-            k4 <= key_in(15 downto 0);
+        if (reset = '1') then
+            -- Reset state ενδεχομενως να μην χρειαζεται για τα k και k_unch
+            k0 := key_in(79 downto 64);
+            k1 := key_in(63 downto 48);
+            k2 := key_in(47 downto 32);
+            k3 := key_in(31 downto 16);
+            k4 := key_in(15 downto 0);
             round_counter <= 0;
             con80_r <= (others => '0');
             keys := (others => '0');
         elsif rising_edge(clk) then
-            if enable = "000" then
+            if (enable = "001" and mode = '0') then
+                k0 := key_in(79 downto 64);
+                k1 := key_in(63 downto 48);
+                k2 := key_in(47 downto 32);
+                k3 := key_in(31 downto 16);
+                k4 := key_in(15 downto 0);
                 -- Generate constants for the current round
                 con80_r <= generate_con80(round_counter);
                 -- Generate keys and output based on round counter

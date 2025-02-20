@@ -7,6 +7,7 @@ entity key_scheduler128 is
         clk      : in std_logic;
         reset    : in std_logic;
         enable   : in std_logic_vector(2 downto 0); -- Enable with State Machine output
+        mode     : in std_logic; -- 0: key80 | 1: key128
         key_in   : in std_logic_vector(127 downto 0); 
         keys_out : out std_logic_vector(31 downto 0) -- 32-bit έξοδος: key1 | key2
     );
@@ -16,7 +17,7 @@ architecture Behavioral of key_scheduler128 is
     -- Internal signals
     type subkey_array is array (0 to 7) of std_logic_vector(15 downto 0);
     --signal k : subkey_array; -- 16-bit subkeys
-    signal k_unch: subkey_array; -- Unchanged subkeys
+    -- signal k_unch: subkey_array; -- Unchanged subkeys
     --signal k0, k1, k2, k3, k4, k5, k6, k7 : std_logic_vector(15 downto 0);  -- 16-bit subkeys
     signal round_counter: integer range 0 to 33 := 0;    -- Μετρητής για 33 cycles (2 κύκλου whk, 31 κύκλοι για rk)
     signal con128_r     : std_logic_vector(31 downto 0); -- 32-bit constant for the current round
@@ -48,9 +49,10 @@ begin
         variable k : subkey_array; -- 16-bit subkeys
         variable  keys : std_logic_vector(31 downto 0); -- Χρήση `variable` για αποφυγή καθυστερήσεων
         variable  index: integer range 0 to 62;
+        variable k_unch: subkey_array; -- Unchanged subkeys
     begin
-        if reset = '1' then
-            -- Reset state
+        if (reset = '1') then
+            -- Reset state ενδεχομενως να μην χρειαζεται για τα k και k_unch
             k(0) := key_in(127 downto 112);
             k(1) := key_in(111 downto 96);
             k(2) := key_in(95 downto 80);
@@ -59,27 +61,42 @@ begin
             k(5) := key_in(47 downto 32);
             k(6) := key_in(31 downto 16);
             k(7) := key_in(15 downto 0);
-            k_unch(0) <= key_in(127 downto 112);
-            k_unch(1) <= key_in(111 downto 96);
-            k_unch(2) <= key_in(95 downto 80);
-            k_unch(3) <= key_in(79 downto 64);
-            k_unch(4) <= key_in(63 downto 48);
-            k_unch(5) <= key_in(47 downto 32);
-            k_unch(6) <= key_in(31 downto 16);
-            k_unch(7) <= key_in(15 downto 0);
+            k_unch(0) := key_in(127 downto 112);
+            k_unch(1) := key_in(111 downto 96);
+            k_unch(2) := key_in(95 downto 80);
+            k_unch(3) := key_in(79 downto 64);
+            k_unch(4) := key_in(63 downto 48);
+            k_unch(5) := key_in(47 downto 32);
+            k_unch(6) := key_in(31 downto 16);
+            k_unch(7) := key_in(15 downto 0);
 
             round_counter <= 0;
             con128_r <= (others => '0');
             keys := (others => '0');
             index := 0;
         elsif rising_edge(clk) then
-            if enable = "000" then
+            if (enable = "001" and mode = '1') then
+                k_unch(0) := key_in(127 downto 112);
+                k_unch(1) := key_in(111 downto 96);
+                k_unch(2) := key_in(95 downto 80);
+                k_unch(3) := key_in(79 downto 64);
+                k_unch(4) := key_in(63 downto 48);
+                k_unch(5) := key_in(47 downto 32);
+                k_unch(6) := key_in(31 downto 16);
+                k_unch(7) := key_in(15 downto 0);
                 -- Generate constants for the current round
                 con128_r <= generate_con128(round_counter);
                 -- Generate keys and output based on round counter
                 case round_counter is
                     when 0 =>
-                        
+                        k(0) := key_in(127 downto 112);
+                        k(1) := key_in(111 downto 96);
+                        k(2) := key_in(95 downto 80);
+                        k(3) := key_in(79 downto 64);
+                        k(4) := key_in(63 downto 48);
+                        k(5) := key_in(47 downto 32);
+                        k(6) := key_in(31 downto 16);
+                        k(7) := key_in(15 downto 0);
                         keys := k_unch(0)(15 downto 8) & k_unch(1)(7 downto 0) & k_unch(1)(15 downto 8) & k_unch(0)(7 downto 0); -- Whitening keys wk0 | wk1
                     when 32 =>
                         keys := k_unch(4)(15 downto 8) & k_unch(7)(7 downto 0) & k_unch(7)(15 downto 8) & k_unch(4)(7 downto 0); -- Final whitening keys wk2 | wk3
@@ -113,6 +130,7 @@ begin
                     round_counter <= 0; -- Reset after all rounds
                     index := 0;
                     con128_r <= (others => '0');
+                    --- ισως reset και το k και το k_unch
                 end if;
             end if;
         end if;

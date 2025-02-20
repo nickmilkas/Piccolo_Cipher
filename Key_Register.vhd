@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.key_reg_pkg.all;
+--use work.key_reg_pkg.all;
 
 package key_reg_pkg is
     type reg_array is array (natural range <>) of std_logic_vector(31 downto 0);
@@ -19,6 +19,12 @@ package body key_reg_pkg is
     end function zeros;
 end package body key_reg_pkg;
 
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.key_reg_pkg.all;
+library work;
+use work.key_reg_pkg.all;
 
 entity key_reg is
     port (
@@ -33,6 +39,7 @@ entity key_reg is
 		---en_enc_decr   : in std_logic;
         write_fin     : out std_logic;
         enc_dec_fin   : out std_logic;
+        registers_out  : out reg_array(0 to 32);
         out_initial   : out reg_array(0 to 1);
         out_iter1  	  : out reg_array(0 to 14);
 		out_iter2  	  : out reg_array(0 to 14);
@@ -54,15 +61,34 @@ begin
                     write_addr <= (others => '0');
                 else
                     registers(to_integer(unsigned(write_addr))) <= write_data;
-                    if unsigned(write_addr) < 32 then
-                        write_addr <= std_logic_vector(unsigned(write_addr) + 1);
-                    else
-                        write_fin <= '1';
+                    if mode(0) = '1' then
+                        if to_integer(unsigned(write_addr)) < 32 then 
+                            write_addr <= std_logic_vector(unsigned(write_addr) + 1);
+                        else 
+                            write_fin <= '1';  
+                        end if;
+                    else 
+                        if to_integer(unsigned(write_addr)) < 26 then 
+                            write_addr <= std_logic_vector(unsigned(write_addr) + 1);
+                        else 
+                            write_fin <= '1';  
+                        end if;
                     end if;
+                --else
+                    -- registers(to_integer(unsigned(write_addr))) <= write_data;
+                    -- if to_integer(unsigned(write_addr)) < 32 and mode(0) = '1' then
+                    --     write_addr <= std_logic_vector(unsigned(write_addr) + 1);
+                    -- else if to_integer(unsigned(write_addr)) < 26 and mode(0) = '0' then
+                    --     write_addr <= std_logic_vector(unsigned(write_addr) + 1);
+                    -- else 
+                    --     write_fin <= '1';
+                    -- end if;
+                     
                 end if;
             end if;
         end if;
     end process;
+    registers_out <= registers;
 	--- Προσθεσε σημα εξδοδου οτι τελειωσε το write ----
 	
 	---------Check Decryption Part-------------------
@@ -74,8 +100,8 @@ begin
 		variable temp_rk: std_logic_vector(31 downto 0);
 	begin
 		if rising_edge(clk) then
-			if internal_mode = "010" and mode(0)='1' then
-				if mode(1) = '1' then
+			if internal_mode = "010" and mode(1)='1' then
+				if mode(0) = '1' then
 					valid_lines := 33;
 				else 
 					valid_lines := 27;
@@ -95,7 +121,9 @@ begin
                     counter := counter + 1;
                 end loop;
 				registers <= temp;
-                enc_dec_fin <= '1';
+                if counter = valid_lines - 2 then
+                    enc_dec_fin <= '1';
+                end if;
             else
                 enc_dec_fin <= '1';
 		    end if;
@@ -108,7 +136,7 @@ begin
     
 	process(clk,rst)
         variable valid_lines : integer;
-		variable temp_iter2  : reg_array(0 to 13);
+		variable temp_iter2  : reg_array(0 to 14);
     begin
         if rising_edge(clk) then
             if internal_mode > "010" then
@@ -134,7 +162,7 @@ begin
                     out_iter1 <= registers(2 to 16);
 					
 					temp_iter2 := (others => (others => '0'));
-                    temp_iter2(0 to valid_lines - 19) := registers(17 to valid_lines - 3);
+                    temp_iter2(0 to valid_lines - 20) := registers(17 to valid_lines - 3);
                     out_iter2 <= temp_iter2;
                 end if;
             end if;

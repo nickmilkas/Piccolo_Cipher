@@ -3,6 +3,12 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use ieee.std_logic_unsigned.all;
 
+library work;
+use work.key_reg_pkg.all;
+-- use work.initial_stage_pkg.all;
+-- use work.iterative_stage_pkg.all;
+-- use work.final_stage_pkg.all;
+
 entity main is 
     port(
         clk: in std_logic;
@@ -19,11 +25,12 @@ entity main is
 architecture Piccolo of main is 
 
     component fsm_diagram is
-        port(
-            clk, reset : in std_logic;
-            key_reg,init_fin,iter_fin,last_fin: in std_logic;
-            fsm_out: out std_logic_vector(2 downto 0)
-        );
+        port   (clk, reset : in std_logic;
+                in_ctrl, write_fin, enc_dec_fin, read_enable : in std_logic;
+                fsm_out: out std_logic_vector(2 downto 0);
+                count_out: out std_logic_vector(4 downto 0);
+                shift: out std_logic;
+                selector: out std_logic);
     end component;
 
     component input_controller is 
@@ -50,6 +57,7 @@ architecture Piccolo of main is
             clk     : in std_logic;
             reset   : in std_logic;
             enable  : in std_logic_vector(2 downto 0);
+            mode     : in std_logic; 
             key_in  : in std_logic_vector(79 downto 0); 
             keys_out: out std_logic_vector(31 downto 0)
         );
@@ -60,6 +68,7 @@ architecture Piccolo of main is
             clk     : in std_logic;
             reset   : in std_logic;
             enable  : in std_logic_vector(2 downto 0);
+            mode     : in std_logic; 
             key_in  : in std_logic_vector(127 downto 0); 
             keys_out: out std_logic_vector(31 downto 0)
         );
@@ -67,25 +76,33 @@ architecture Piccolo of main is
 
     component key_reg is
         port(
-            clk, rst      : in  std_logic;
-            write_data    : in  std_logic_vector (31 downto 0);
-            read_addr0    : in  std_logic_vector (5 downto 0);
-            read_addr1    : in  std_logic_vector (5 downto 0);
-            write_enable  : in  std_logic;
-            read_enable   : in  std_logic;
-            data_1, data_2: out std_logic_vector (31 downto 0);
-            is_full       : out std_logic
-        )
+            clk, rst      : in std_logic;
+            write_data    : in std_logic_vector (31 downto 0);
+            ---- OLD ENABLES
+            ---write_enable  : in std_logic_vector(2 downto 0);
+            ---read_enable   : in std_logic_vector(2 downto 0);
+            ----
+            internal_mode : in std_logic_vector(2 downto 0);
+            mode          : in std_logic_vector(1 downto 0);
+            ---en_enc_decr   : in std_logic;
+            write_fin     : out std_logic;
+            enc_dec_fin   : out std_logic;
+            registers_out : out reg_array(0 to 32);
+            out_initial   : out reg_array(0 to 1);
+            out_iter1  	  : out reg_array(0 to 14);
+            out_iter2  	  : out reg_array(0 to 14);
+            out_final     : out reg_array(0 to 1)
+        );
     end component;
 
     component initial_stage is 
         port(
-            plain_text      : in std_logic_vector(63 downto 0);
-            wk_row          : in std_logic_vector(31 downto 0);
-            rk_row          : in std_logic_vector(31 downto 0);
-            activate        : in std_logic_vector(3 downto 0);
-            modified_X      : out std_logic_vector(63 downto 0);
-            initial_finished: out std_logic
+            clk				: in std_logic;
+            reset			: in std_logic;
+            plain_text      : in  std_logic_vector(63 downto 0);
+            --init_keys       : in  two_line_array;
+            internal_mode   : in  std_logic_vector(2 downto 0);
+            modified_X      : out std_logic_vector(63 downto 0)
         );
     end component;
 
@@ -94,22 +111,24 @@ architecture Piccolo of main is
             clk               : in std_logic;
             reset             : in std_logic;
             modified_X        : in std_logic_vector(63 downto 0);
-            rk_row            : in std_logic_vector(31 downto 0);
-            activate          : in std_logic_vector(3 downto 0);
-            choose            : in std_logic;
-            new_modified      : out std_logic_vector(63 downto 0);
-            iterative_finished: out std_logic
+            --rk_row            : in rk_array;
+            mode              : in std_logic_vector(1 downto 0);
+            internal_mode     : in std_logic_vector(2 downto 0);
+            selector          : in std_logic;
+            counter           : in std_logic_vector(4 downto 0);
+            reduced           : in std_logic;
+            new_modified      : out std_logic_vector(63 downto 0)
         );
     end component;
 
     component final_stage is 
         port(
+            clk           : in std_logic;
+            reset         : in std_logic;
             modified_X    : in std_logic_vector(63 downto 0);
-            wk_row        : in std_logic_vector(31 downto 0);
-            rk_row        : in std_logic_vector(31 downto 0);
-            activate      : in std_logic_vector(3 downto 0);
-            Y             : out std_logic_vector(63 downto 0);
-            final_finished: out std_logic
+            --final_keys    : in two_line_array;
+            internal_mode : in std_logic_vector(2 downto 0);
+            Y             : out std_logic_vector(63 downto 0)
         );
     end component;
 
@@ -118,18 +137,20 @@ architecture Piccolo of main is
         port(
             clk        : in  std_logic;
             rst        : in  std_logic;
-            load_en    : in  std_logic;
+            data_proc  : in  std_logic;
+            shift      : in  std_logic;
             input_bits : in  std_logic_vector(WIDTH-1 downto 0);
             output_bits: out std_logic_vector(WIDTH-1 downto 0)
         );
-    end reg_nbit;
+    end component;
 
-    type reg_array is array (0 to 32) of std_logic_vector (31 downto 0);
+    -- type reg_array is array (0 to 32) of std_logic_vector (31 downto 0);
     -- arrays
-    signal array_inital: reg_array := (others => (others => '0'));
-    signal array_iterative1: reg_array := (others => (others => '0'));
-    signal array_iterative2: reg_array := (others => (others => '0'));
-    signal array_final: reg_array := (others => (others => '0'));
+    signal register_file: reg_array(0 to 32);
+    signal array_inital: reg_array(0 to 1);
+    signal array_iterative1: reg_array(0 to 14);
+    signal array_iterative2: reg_array(0 to 14);
+    signal array_final: reg_array(0 to 1);
     -- signals
     signal key_out80: std_logic_vector(79 downto 0);
     signal key_out128: std_logic_vector(127 downto 0);
@@ -139,11 +160,15 @@ architecture Piccolo of main is
     signal keys_reg80: std_logic_vector(31 downto 0);
     signal keys_reg128: std_logic_vector(31 downto 0);
     signal fsm_control: std_logic_vector(2 downto 0);
-    signal modified_X, iter_X, final_X: std_logic_vector(63 downto 0);
-    signal modified_X_reg, iter_X_reg: std_logic_vector(63 downto 0);
+    signal modified_X, iter1_X, iter2_X, output_Y: std_logic_vector(63 downto 0);
+    signal modified_X_reg, iter1_X_reg, iter2_X_reg: std_logic_vector(63 downto 0);
     --signal key_reg_full: std_logic;
+    signal key_ready, plain_ready: std_logic;
     signal key_reg_start ,key_reg_finish: std_logic;
     signal write_fin, enc_dec_fin: std_logic;
+    signal count_out: std_logic_vector(4 downto 0);
+    signal shift, selector: std_logic;
+    --signal c_80: integer range 0 to 27;
 
 
     
@@ -151,9 +176,8 @@ architecture Piccolo of main is
 begin
     --- να αλλαχθουν τα port map του fsm
     fsm_ctrl: fsm_diagram port map(
-        clk => clk, reset => reset, key_reg => key_reg_finish, 
-        init_fin => initial_finished, iter_fin => iterative_finished, last_fin => final_finished,
-        fsm_out => fsm_control
+        clk => clk, reset => reset, in_ctrl => key_ready, write_fin => write_fin, enc_dec_fin => enc_dec_fin, read_enable => '1',
+        fsm_out => fsm_control, count_out => count_out, shift => shift, selector => selector
     );
 
     in_ctrl: input_controller port map(
@@ -162,62 +186,70 @@ begin
         plain_out64 => plain_out64, key_ready => key_ready, plain_ready => plain_ready
     );
 
-    plain_register: reg_nbit 
-        generic map (WIDTH => 16)
-        port map(
-        clk => clk, rst => rst, load_en => plain_ready, input_bits => plain_out64, output_bits => plain_reg
-    );
-
-    --- to add selection before
     key_sched80: key_scheduler80 port map(
-        clk => clk, reset => reset, enable => fsm_control, key_in => key_out80, keys_out => keys_reg80
+        clk => clk, reset => reset, enable => fsm_control, mode => mode(0), key_in => key_out80, keys_out => keys_reg80
     );
 
     key_sched128: key_scheduler128 port map(
-        clk => clk, reset => reset, enable => fsm_control, key_in => key_out128, keys_out => keys_reg128
+        clk => clk, reset => reset, enable => fsm_control, mode => mode(0), key_in => key_out128, keys_out => keys_reg128
     );
 
-    
     selected_write_data <= keys_reg80 when (mode(0) = '0') else keys_reg128; --this to be before the 2 key_schedulers
    
-    key_reg: key_reg port map(
+    -- FIX!! enc_dec_fin παντα 1 και write_fin δεν παιρνει τιμη στο test 
+    file_key_register: key_reg port map(
         clk => clk, rst => reset, write_data => selected_write_data, internal_mode => fsm_control, mode => mode, 
-        write_fin => write_fin, enc_dec_fin => enc_dec_fin, out_initial => array_inital, out_iter1 => array_iterative1,
-        out_iter2 => array_iterative2, out_final => array_final
+        write_fin => write_fin, enc_dec_fin => enc_dec_fin, registers_out => register_file, out_initial => array_inital, 
+        out_iter1 => array_iterative1, out_iter2 => array_iterative2, out_final => array_final
     );
 
 
 
     ---- FIX ALL
     -------- G function Data Proccesing Part --------
-    init_stage: initial_stage port map(
-        plain_text => plain_reg, wk_row => keys_reg80, rk_row => keys_reg80,
-        activate => fsm_control(2 downto 0), modified_X => modified_X, initial_finished => initial_finished
-    );
+    -- register1: reg_nbit 
+    --     generic map (WIDTH => 64)
+    --     port map(
+    --     clk => clk, rst => reset, data_proc => '1', shift => shift, input_bits => plain_out64, output_bits => plain_reg
+    -- );
+    -- init_stage: initial_stage port map(
+    --     clk => clk, reset => reset, plain_text => plain_reg, init_keys => array_inital, internal_mode => fsm_control,
+    --     modified_X => modified_X
+    -- ); -- init_keys ειναι τυπου two_line_array, array_inital ειναι reg_array(0 to 1)
 
-    register1: reg_nbit 
-        generic map (WIDTH => 64)
-        port map(
-        clk => clk, rst => rst, load_en => initial_finished, input_bits => modified_X, output_bits => modified_X_reg
-    );
+    -- register2: reg_nbit 
+    --     generic map (WIDTH => 64)
+    --     port map(
+    --     clk => clk, rst => rst, data_proc => '1', shift => shift, input_bits => modified_X, output_bits => modified_X_reg
+    -- );
 
-    -- fix: must be 2 stages of iterative instead of 1
-    iter_stage: iterative_stage port map(
-        clk => clk, reset => reset, modified_X => iter_X, rk_row => keys_reg80,
-        activate => fsm_control(2 downto 0), choose => '0', new_modified => iter_X, 
-        iterative_finished => iterative_finished
-    );
+    -- -- fix: must be 2 stages of iterative instead of 1
+    -- iter_stage1: iterative_stage port map(
+    --     clk => clk, reset => reset, modified_X => modified_X_reg, rk_row => array_iterative1, mode => mode, 
+    --     internal_mode => fsm_control, selector => selector, counter => count_out, reduced => '0', new_modified => iter1_X
+    -- ); -- rk_row ειναι τυπου rk_array, array_iterative1 ειναι reg_array(0 to 14)
 
-    register2: reg_nbit 
-        generic map (WIDTH => 64)
-        port map(
-        clk => clk, rst => rst, load_en => iterative_finished, input_bits => iter_X, output_bits => iter_X_reg
-    );
+    -- register3: reg_nbit 
+    --     generic map (WIDTH => 64)
+    --     port map(
+    --     clk => clk, rst => rst, data_proc => '1', shift => shift, input_bits => iter1_X, output_bits => iter1_X_reg
+    -- ); 
+    
+    -- iter_stage2: iterative_stage port map(
+    --     clk => clk, reset => reset, modified_X => iter1_X_reg, rk_row => array_iterative2, mode => mode, 
+    --     internal_mode => fsm_control, selector => selector, counter => count_out, reduced => '1', new_modified => iter2_X
+    -- ); -- rk_row ειναι τυπου rk_array, array_iterative2 ειναι reg_array(0 to 14)
+    
+    -- register4: reg_nbit 
+    --     generic map (WIDTH => 64)
+    --     port map(
+    --     clk => clk, rst => rst, data_proc => '1', shift => shift, input_bits => iter2_X, output_bits => iter2_X_reg
+    -- );
 
-    final_stage: final_stage port map(
-        modified_X => final_X, wk_row => keys_reg80, rk_row => keys_reg80,
-        activate => fsm_control(2 downto 0), Y => cipher, final_finished => final_finished
-    );
+    -- final_stage: final_stage port map(
+    --     clk => clk, reset => reset, modified_X => iter2_X_reg, final_keys => array_final, internal_mode => fsm_control,
+    --     Y => output_Y
+    -- ); -- final_keys ειναι τυπου two_line_array, array_final ειναι reg_array(0 to 1)
     -------- END OF G function --------
     
     ---- END FIX

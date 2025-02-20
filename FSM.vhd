@@ -17,7 +17,7 @@ architecture fsm_diagram_arch of fsm_diagram is
     signal counter: std_logic_vector(4 downto 0) := (others => '0');
     signal shift_signal: std_logic := '0';
 begin
-    process(clk, reset, in_ctrl, write_fin, enc_dec_fin, read_enable)
+    process(clk, reset) --, in_ctrl, write_fin, enc_dec_fin, read_enable
     begin
         if reset = '1' then
             state <= A;
