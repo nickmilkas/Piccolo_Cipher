@@ -26,6 +26,8 @@ architecture Behavioral of input_controller is
     signal key_counter   : integer range 0 to 7 := 0;   -- Μετρητής για 8 chunks (128-bit)
     signal plain_counter : integer range 0 to 3 := 0;   -- Μετρητής για 4 chunks (64-bit)
     signal max_key_chunks: integer := 0;                -- 5 για 80-bit, 8 για 128-bit
+    signal key_rd        : std_logic;            -- Ένδειξη ολοκλήρωσης φόρτωσης κλειδιού
+    signal plain_rd     : std_logic;            -- Ένδειξη ολοκλήρωσης φόρτωσης plaintext
 begin
 
 max_key_chunks <= 4 when key_mode = '0' else 7;
@@ -36,14 +38,16 @@ begin
     if reset = '1' then
         key_reg <= (others => '0');
         key_counter <= 0;
+        key_rd <= '0';
         key_ready <= '0';
     elsif rising_edge(clk) then
-        key_ready <= '0';  -- Προκαθορισμένη τιμή
-        if load_key = '1' then
+        -- key_ready <= '0';  -- Προκαθορισμένη τιμή
+        if (load_key = '1' and key_rd = '0') then
             -- Σειριακή φόρτωση με shift left και προσθήκη νέου chunk
             key_reg <= key_reg(111 downto 0) & key_in16; 
             if key_counter = max_key_chunks then
                 key_counter <= 0;
+                key_rd <= '1';
                 key_ready   <= '1';  
             else
                 key_counter <= key_counter + 1;
@@ -58,14 +62,16 @@ begin
     if reset = '1' then
         plaintext_reg <= (others => '0');
         plain_counter <= 0;
+        plain_rd <= '0';    
         plain_ready   <= '0';
     elsif rising_edge(clk) then
-        plain_ready <= '0';  -- Προκαθορισμένη τιμή
-        if load_plain = '1' then
+        -- plain_ready <= '0';  -- Προκαθορισμένη τιμή
+        if (load_plain = '1' and plain_rd = '0') then
             -- Σειριακή φόρτωση με shift left και προσθήκη νέου chunk
             plaintext_reg <= plaintext_reg(47 downto 0) & plain_in16; 
             if plain_counter = 3 then
                 plain_counter <= 0;
+                plain_rd <= '1';
                 plain_ready   <= '1';  -- Έτοιμο μετά το 4ο chunk
             else
                 plain_counter <= plain_counter + 1;

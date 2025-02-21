@@ -147,7 +147,7 @@ architecture Piccolo of main is
     -- type reg_array is array (0 to 32) of std_logic_vector (31 downto 0);
     -- arrays
     signal register_file: reg_array(0 to 32);
-    signal array_inital: reg_array(0 to 1);
+    signal array_initial: reg_array(0 to 1);
     signal array_iterative1: reg_array(0 to 14);
     signal array_iterative2: reg_array(0 to 14);
     signal array_final: reg_array(0 to 1);
@@ -199,7 +199,7 @@ begin
     -- FIX!! enc_dec_fin παντα 1 και write_fin δεν παιρνει τιμη στο test 
     file_key_register: key_reg port map(
         clk => clk, rst => reset, write_data => selected_write_data, internal_mode => fsm_control, mode => mode, 
-        write_fin => write_fin, enc_dec_fin => enc_dec_fin, registers_out => register_file, out_initial => array_inital, 
+        write_fin => write_fin, enc_dec_fin => enc_dec_fin, registers_out => register_file, out_initial => array_initial, 
         out_iter1 => array_iterative1, out_iter2 => array_iterative2, out_final => array_final
     );
 
@@ -207,15 +207,15 @@ begin
 
     ---- FIX ALL
     -------- G function Data Proccesing Part --------
-    -- register1: reg_nbit 
-    --     generic map (WIDTH => 64)
-    --     port map(
-    --     clk => clk, rst => reset, data_proc => '1', shift => shift, input_bits => plain_out64, output_bits => plain_reg
-    -- );
+    register1: reg_nbit 
+        generic map (WIDTH => 64)
+        port map(
+        clk => clk, rst => reset, data_proc => '1', shift => shift, input_bits => plain_out64, output_bits => plain_reg
+    );
     -- init_stage: initial_stage port map(
-    --     clk => clk, reset => reset, plain_text => plain_reg, init_keys => array_inital, internal_mode => fsm_control,
+    --     clk => clk, reset => reset, plain_text => plain_reg, init_keys => array_initial, internal_mode => fsm_control,
     --     modified_X => modified_X
-    -- ); -- init_keys ειναι τυπου two_line_array, array_inital ειναι reg_array(0 to 1)
+    -- ); -- init_keys ειναι τυπου two_line_array, array_initial ειναι reg_array(0 to 1)
 
     -- register2: reg_nbit 
     --     generic map (WIDTH => 64)

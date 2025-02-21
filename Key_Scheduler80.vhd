@@ -57,7 +57,7 @@ begin
             con80_r <= (others => '0');
             keys := (others => '0');
         elsif rising_edge(clk) then
-            if (enable = "001" and mode = '0') then
+            if ((enable = "111" or enable = "001") and mode = '0') then
                 k0 := key_in(79 downto 64);
                 k1 := key_in(63 downto 48);
                 k2 := key_in(47 downto 32);

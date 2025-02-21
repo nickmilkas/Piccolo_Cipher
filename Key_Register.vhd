@@ -11,8 +11,6 @@ entity key_reg is
         mode          : in std_logic_vector(1 downto 0);
         write_fin     : out std_logic;
         enc_dec_fin   : out std_logic;
-        current       : out std_logic_vector(31 downto 0);
-        current2      : out std_logic_vector(31 downto 0);
         registers_out : out reg_array(0 to 32);
         out_initial   : out reg_array(0 to 1);
         out_iter1     : out reg_array(0 to 14);

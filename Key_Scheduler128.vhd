@@ -75,7 +75,7 @@ begin
             keys := (others => '0');
             index := 0;
         elsif rising_edge(clk) then
-            if (enable = "001" and mode = '1') then
+            if ((enable = "111" or enable = "001") and mode = '1') then
                 k_unch(0) := key_in(127 downto 112);
                 k_unch(1) := key_in(111 downto 96);
                 k_unch(2) := key_in(95 downto 80);
@@ -122,7 +122,7 @@ begin
                             index := index + 1;
                         end if;
                 end case;
-
+                                
                 -- Update round counter
                 if round_counter < 33 then
                     round_counter <= round_counter + 1;
@@ -138,6 +138,6 @@ begin
     end process;
 
     -- Σύνδεση εξόδου
-    --keys_out <= keys;
+    -- keys_out <= keys;
 
 end Behavioral;
