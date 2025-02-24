@@ -63,9 +63,22 @@ architecture iterative_stage_arch of iterative_stage is
 			output_bits       : out std_logic_vector(WIDTH-1 downto 0)
 		);
 	end component;
+	
+	component iterative_register is
+    generic (
+        WIDTH : integer := 64
+    );
+    port (
+        clk         : in std_logic;
+        rst         : in std_logic;
+        input_data  : in std_logic_vector(WIDTH-1 downto 0);
+        output_data : out std_logic_vector(WIDTH-1 downto 0)
+    );
+	end component;
 
     signal internal_1, internal_2, internal_3, internal_4 : std_logic_vector(15 downto 0);
-    signal before_rp, after_rp, x_temp : std_logic_vector(63 downto 0);
+    signal before_rp, after_rp: std_logic_vector(63 downto 0);
+	signal x_temp : std_logic_vector(63 downto 0);
     signal f1, f2 : std_logic_vector(15 downto 0);
     signal reg_q : std_logic_vector(63 downto 0);
     signal iteration_count : integer range 0 to 15 := 0;
@@ -75,8 +88,8 @@ architecture iterative_stage_arch of iterative_stage is
 begin
     MUX: mux_2x1 port map(input_1 => modified_X, input_2 => reg_q, selector => selector, output => x_temp);
 
-    max_iterations <= 15 when reduced = '0' and mode(0) = '1' else 
-                      10 when reduced = '1' and mode(0) = '0' else
+    max_iterations <= 15 when reduced = '0' else 
+                      8 when reduced = '1' and mode(0) = '0' else
                       14;
 
     U1: F_Box port map(x => x_temp(63 downto 48), f_out => f1);
@@ -91,30 +104,34 @@ begin
 
     RP_Part: RP_Box port map(x => before_rp, rp_out => after_rp);
 
-    U3: reg_nbit port map(clk => clk, rst =>reset, data_proc => '0', shift => '1', input_bits => after_rp, output_bits => reg_q);
+	U3: iterative_register port map( clk => clk, rst => reset, input_data => after_rp, output_data => reg_q);
+	
+	-- Concurrent assignment for iteration count
+	iteration_count <= iteration_count + 1 when (internal_mode = "011" and iteration_count < max_iterations) else 0 when reset = '1' else iteration_count;
 
-    process(clk, reset)
-    begin
-        if reset = '1' then
-            new_modified <= (others => 'U');  
-            iteration_count <= 0;
-            last_valid_result <= (others => 'U'); 
-        elsif rising_edge(clk) then
-            if internal_mode = "011" then
+	-- Concurrent assignment for new_modified
+	new_modified <= reg_q when (internal_mode = "011") else (others => 'U');
+
+	
+    -- process(clk, reset)
+    -- begin
+        -- if reset = '1' then
+            -- new_modified <= (others => 'U');  
+            -- iteration_count <= 0;
+        -- elsif rising_edge(clk) then
+            -- if internal_mode = "011" then
+				-- new_modified <= reg_q;
+                -- if iteration_count < max_iterations then
+                    -- iteration_count <= iteration_count + 1;
+                -- end if;
 				
-                if iteration_count < max_iterations then
-                    new_modified <= after_rp;
-                    last_valid_result <= after_rp;
-                    iteration_count <= iteration_count + 1;
-                else
-                    new_modified <= last_valid_result;
-                end if;
-				
-            else
-                new_modified <= (others => 'X'); 
-                iteration_count <= 0;
-            end if;
-        end if;
-    end process;
+                -- if iteration_count = max_iterations then
+                    -- new_modified <= reg_q;
+                -- end if;
+            -- end if;
+        -- end if;
+    -- end process;
+	
+	
 
 end iterative_stage_arch;

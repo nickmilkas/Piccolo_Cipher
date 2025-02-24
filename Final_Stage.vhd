@@ -47,8 +47,6 @@ begin
         elsif rising_edge(clk) then
             if internal_mode = "011" then
                 Y <= internal_1 & internal_2 & internal_3 & internal_4;
-            else
-                Y <= (others => 'U');
             end if;
         end if;
     end process;

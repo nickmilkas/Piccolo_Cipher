@@ -137,7 +137,6 @@ architecture Piccolo of main is
 		port(
 			clk     : in  std_logic;
 			rst     : in  std_logic;
-			data_proc: in  std_logic;
 			shift   : in  std_logic;
 			input_bits       : in  std_logic_vector(WIDTH-1 downto 0);
 			output_bits       : out std_logic_vector(WIDTH-1 downto 0)
@@ -209,7 +208,7 @@ begin
     register1: reg_nbit 
         generic map (WIDTH => 64)
         port map(
-        clk => clk, rst => reset, data_proc => '1', shift => shift, input_bits => plain_out64, output_bits => plain_reg
+        clk => clk, rst => reset, shift => shift, input_bits => plain_out64, output_bits => plain_reg
     );
 	
     init_stage: initial_stage port map(
@@ -221,7 +220,7 @@ begin
     register2: reg_nbit 
          generic map (WIDTH => 64)
          port map(
-         clk => clk, rst => reset, data_proc => '1', shift => shift, input_bits => modified_X, output_bits => modified_X_reg
+         clk => clk, rst => reset, shift => shift, input_bits => modified_X, output_bits => modified_X_reg
      );
 
     
@@ -233,7 +232,7 @@ begin
     register3: reg_nbit 
         generic map (WIDTH => 64)
         port map(
-        clk => clk, rst => reset, data_proc => '1', shift => shift, input_bits => iter1_X, output_bits => iter1_X_reg
+        clk => clk, rst => reset, shift => shift, input_bits => iter1_X, output_bits => iter1_X_reg
     ); 
     
     iter_stage2: iterative_stage port map(
@@ -244,7 +243,7 @@ begin
     register4: reg_nbit 
         generic map (WIDTH => 64)
         port map(
-        clk => clk, rst => reset, data_proc => '1', shift => shift, input_bits => iter2_X, output_bits => iter2_X_reg
+        clk => clk, rst => reset, shift => shift, input_bits => iter2_X, output_bits => iter2_X_reg
     );
 
     final_st: final_stage port map(

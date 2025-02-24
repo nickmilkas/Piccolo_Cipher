@@ -56,6 +56,8 @@ begin
                         counter         <= (others => '0');
                         state           <= D;
                         c_delay_counter <= 0;
+					
+						
                     else
                         c_delay_counter <= c_delay_counter + 1;
                         state           <= C;
@@ -69,11 +71,13 @@ begin
                         counter <= std_logic_vector(unsigned(counter) + 1);
                     else
                         state <= E;
+						shift_signal <= '1';
+						selector <='0';
                     end if;
                     
                 when E =>
-                    shift_signal <= '1';
-					selector <='0';
+                    selector <= '1';
+					shift_signal <= '0';
                     counter      <= (others => '0');
                     state       <= D; 
             end case;
