@@ -1,18 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-
-package final_stage_pkg is
-    type two_line_array is array (0 to 1) of std_logic_vector(31 downto 0);
-end package final_stage_pkg;
-
-package body final_stage_pkg is
-end package body final_stage_pkg;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.final_stage_pkg.all;
+use work.initial_stage_pkg.all;
 
 entity final_stage is 
     port(

@@ -68,7 +68,7 @@ begin
 		if reset = '1' then
 			modified_X <= (others => 'U');
 		elsif rising_edge(clk) then
-			if internal_mode = "011" then
+			if internal_mode = "010" or internal_mode = "011" then
 				modified_X <= after_rp;
 			end if;
 		end if;

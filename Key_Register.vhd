@@ -2,6 +2,9 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.key_reg_pkg.all;
+use work.initial_stage_pkg.all;
+use work.iterative_stage_pkg.all;
+
 
 entity key_reg is
     port (
@@ -12,10 +15,11 @@ entity key_reg is
         write_fin     : out std_logic;
         enc_dec_fin   : out std_logic;
         registers_out : out reg_array(0 to 32);
-        out_initial   : out reg_array(0 to 1);
-        out_iter1     : out reg_array(0 to 14);
-        out_iter2     : out reg_array(0 to 14);
-        out_final     : out reg_array(0 to 1)
+        out_initial   : out two_line_array;
+		out_final     : out two_line_array;
+        out_iter1     : out rk_array;  
+        out_iter2     : out rk_array  
+        
     );
 end key_reg;
 
@@ -34,7 +38,6 @@ begin
     --------------------------------------------------------------------
     process(clk, rst)
         variable temp_reg   : reg_array(0 to 32);
-        variable temp       : reg_array(0 to 32);
         variable valid_lines: integer;
         variable counter    : integer;
         variable temp_rk    : std_logic_vector(31 downto 0);
@@ -65,36 +68,32 @@ begin
                                 write_fin_int <= '1';
                             end if;
                         end if;
-                        
-                  
                     else 
                         if mode(1) = '0' then
-                            
                             enc_dec_fin_int <= '1';
                         else
-                            
+                            -- Encryption/Decryption logic
                             if mode(0) = '1' then
                                 valid_lines := 33;
                             else
                                 valid_lines := 27;
                             end if;
                             
-                            temp(0) := registers(valid_lines - 1);
-                            temp(valid_lines - 1) := registers(0);
+                            -- Manipulate the registers array
+                            registers(0) <= registers(valid_lines - 1);
+                            registers(valid_lines - 1) <= registers(0);
                             
                             counter := 0;
                             for i in 1 to valid_lines - 2 loop
                                 if (i mod 2) = 0 then
-                                    temp(i) := registers(valid_lines - 2 - counter);
+                                    registers(i) <= registers(valid_lines - 2 - counter);
                                 else
                                     temp_rk := registers(valid_lines - 2 - counter)(15 downto 0) &
                                                registers(valid_lines - 2 - counter)(31 downto 16);
-                                    temp(i) := temp_rk;
+                                    registers(i) <= temp_rk;
                                 end if;
                                 counter := counter + 1;
                             end loop;
-                            
-                            registers <= temp;
                             enc_dec_fin_int <= '1';
                         end if;
                     end if;  
@@ -107,35 +106,43 @@ begin
     -- Process: Output Generation for Iterative Stages and Final Stages
     --------------------------------------------------------------------
     process(clk, rst)
-        variable valid_lines_local: integer;
-        variable temp_iter2       : reg_array(0 to 14);
-    begin
-        if rising_edge(clk) then
-            if internal_mode >= "010" then
-                if rst = '1' then
-                    out_initial <= (others => (others => '0'));
-                    out_iter1   <= (others => (others => '0'));
-                    out_iter2   <= (others => (others => '0'));
-                    out_final   <= (others => (others => '0'));
-                else
-                    if mode(1) = '1' then
-                        valid_lines_local := 33;
-                    else
-                        valid_lines_local := 27;
-                    end if;
-                    
-                 
-                    out_initial <= registers(0 to 1);
-                    out_final   <= registers(valid_lines_local - 2 to valid_lines_local - 1);
-                    
-                    out_iter1 <= registers(2 to 16);
-                    
-                    temp_iter2 := (others => (others => '0'));
-                    temp_iter2(0 to valid_lines_local - 20) := registers(17 to valid_lines_local - 3);
-                    out_iter2 <= temp_iter2;
-                end if;
-            end if;
-        end if;
-    end process;
+    variable valid_lines_local: integer;
+    variable temp_iter2       : rk_array;  -- rk_array type from iterative_stage_pkg
+		begin
+			if rising_edge(clk) then
+				if internal_mode >= "010" then
+					if rst = '1' then
+						out_initial <= (others => (others => '0'));
+						out_iter1   <= (others => (others => '0'));
+						out_iter2   <= (others => (others => '0'));
+						out_final   <= (others => (others => '0'));
+					else
+						if mode(1) = '1' then
+							valid_lines_local := 33;
+						else
+							valid_lines_local := 27;
+						end if;
+						
+						-- Generating out_initial
+						out_initial(0) <= registers(0);
+						out_initial(1) <= registers(1);
+
+						-- Generating out_final
+						out_final(0) <= registers(valid_lines_local - 2);
+						out_final(1) <= registers(valid_lines_local - 1);
+						
+						for i in 0 to 14 loop
+							out_iter1(i) <= registers(2 + i);
+						end loop;
+						
+						temp_iter2 := (others => (others => '0'));
+						for i in 0 to (valid_lines_local - 20) loop
+							temp_iter2(i) := registers(17 + i);
+						end loop;
+						out_iter2 <= temp_iter2;
+					end if;
+				end if;
+			end if;
+		end process;
 
 end key_reg_arch;

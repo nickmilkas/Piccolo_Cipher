@@ -23,7 +23,7 @@ entity iterative_stage is
         mode              : in std_logic_vector(1 downto 0);
         internal_mode     : in std_logic_vector(2 downto 0);
         selector          : in std_logic;
-        counter           : in std_logic_vector(4 downto 0);
+        counter           : in std_logic_vector(3 downto 0);
         reduced           : in std_logic;
         new_modified      : out std_logic_vector(63 downto 0)
     );
@@ -53,16 +53,16 @@ architecture iterative_stage_arch of iterative_stage is
     end component;
 
     component reg_nbit is
-        generic(WIDTH : integer := 64);
-        port(
-            clk        : in  std_logic;
-            rst        : in  std_logic;
-            data_proc  : in  std_logic;
-            shift      : in  std_logic;
-            input_bits : in  std_logic_vector(WIDTH-1 downto 0);
-            output_bits: out std_logic_vector(WIDTH-1 downto 0)
-        );
-    end component;
+		generic(WIDTH : integer := 64);
+		port(
+			clk     : in  std_logic;
+			rst     : in  std_logic;
+			data_proc: in  std_logic;
+			shift   : in  std_logic;
+			input_bits       : in  std_logic_vector(WIDTH-1 downto 0);
+			output_bits       : out std_logic_vector(WIDTH-1 downto 0)
+		);
+	end component;
 
     signal internal_1, internal_2, internal_3, internal_4 : std_logic_vector(15 downto 0);
     signal before_rp, after_rp, x_temp : std_logic_vector(63 downto 0);
@@ -91,16 +91,17 @@ begin
 
     RP_Part: RP_Box port map(x => before_rp, rp_out => after_rp);
 
-    U3: reg_nbit port map(clk => clk, rst => reset, data_proc => '0', shift => '1', input_bits => after_rp, output_bits => reg_q);
+    U3: reg_nbit port map(clk => clk, rst =>reset, data_proc => '0', shift => '1', input_bits => after_rp, output_bits => reg_q);
 
     process(clk, reset)
     begin
         if reset = '1' then
-            new_modified <= (others => 'U');
+            new_modified <= (others => 'U');  
             iteration_count <= 0;
-            last_valid_result <= (others => 'U');
+            last_valid_result <= (others => 'U'); 
         elsif rising_edge(clk) then
             if internal_mode = "011" then
+				
                 if iteration_count < max_iterations then
                     new_modified <= after_rp;
                     last_valid_result <= after_rp;
@@ -108,8 +109,9 @@ begin
                 else
                     new_modified <= last_valid_result;
                 end if;
+				
             else
-                new_modified <= (others => 'U');
+                new_modified <= (others => 'X'); 
                 iteration_count <= 0;
             end if;
         end if;
