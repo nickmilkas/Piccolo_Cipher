@@ -40,6 +40,7 @@ architecture Piccolo of main is
             key_in16: in std_logic_vector(15 downto 0);
             plain_in16: in std_logic_vector(15 downto 0);
             key_mode: in std_logic; -- 0: key80 | 1: key128
+            fsm_control: in std_logic_vector(2 downto 0);
             load_key: in std_logic;
             load_plain: in std_logic;
                 -- Παράλληλες εξόδοι
@@ -181,7 +182,7 @@ begin
 
     in_ctrl: input_controller port map(
         clk => clk, reset => reset, key_in16 => key_in16, plain_in16 => plain_in16, key_mode => mode(0),
-        load_key => '1', load_plain => '1', key_out80 => key_out80, key_out128 => key_out128,
+        fsm_control => fsm_control, load_key => '1', load_plain => '1', key_out80 => key_out80, key_out128 => key_out128,
         plain_out64 => plain_out64, key_ready => key_ready, plain_ready => plain_ready
     );
 

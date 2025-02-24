@@ -27,14 +27,29 @@ void print_binary(BYTE num) {
     }
 }
 
+void print_binary16(unsigned short val) {
+    // Εκτυπώνει 16 bits
+    for (int i = 15; i >= 0; i--) {
+        printf("%d", (val >> i) & 1);
+    }
+}
+
 
 int main(int argc, char *argv[]) {
     BYTE SBox[16] = {
         0xE, 0x4, 0xB, 0x2, 0x3, 0x8, 0x0, 0x9,
         0x1, 0xA, 0x7, 0xF, 0x6, 0xC, 0x5, 0xD
     };
+    // 0b0000, 0b1010, 0b1001, 0b1101
+    // 0000101010011101
+    // 0b1010, 0b1010, 0b1001, 0b1010
+    // 1010101010011010
+    BYTE x[4] = {0b1010, 0b1010, 0b1001, 0b1010}; // Παράδειγμα τιμών για x σε δυαδική μορφή
+    unsigned short x_16 = ((unsigned short)x[0] << 12)
+                        | ((unsigned short)x[1] << 8)
+                        | ((unsigned short)x[2] << 4)
+                        |  (unsigned short)x[3];
 
-    BYTE x[4] = {0xC, 0x2, 0x3, 0x5}; // Παράδειγμα τιμών για x σε δυαδική μορφή
     BYTE M[4][4] = {                              // Παράδειγμα πίνακα M (4x4) σε δυαδική μορφή
         {0x2, 0x3, 0x1, 0x1},
         {0x1, 0x2, 0x3, 0x1},
@@ -65,10 +80,13 @@ int main(int argc, char *argv[]) {
     f[2] = SBox[t[2]];
     f[3] = SBox[t[3]];
 
+    printf("Input = ");
+    print_binary16(x_16);
+    printf("\n\n");
+
     // Εκτύπωση αποτελεσμάτων
     printf("Results in binary:\n");
     //print_binary(gm(s[0], M[0][0]));
-    printf("\n");
     for (int i = 0; i < 4; i++) {
         printf("s[%d] = ", i);
         print_binary(s[i]);

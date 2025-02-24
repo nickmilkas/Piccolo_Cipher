@@ -9,6 +9,7 @@ entity input_controller is
         key_in16: in std_logic_vector(15 downto 0);
         plain_in16: in std_logic_vector(15 downto 0);
         key_mode: in std_logic; -- 0: key80 | 1: key128
+        fsm_control: in std_logic_vector(2 downto 0);
         load_key: in std_logic;
         load_plain: in std_logic;
          -- Παράλληλες εξόδοι
@@ -41,7 +42,6 @@ begin
         key_rd <= '0';
         key_ready <= '0';
     elsif rising_edge(clk) then
-        -- key_ready <= '0';  -- Προκαθορισμένη τιμή
         if (load_key = '1' and key_rd = '0') then
             -- Σειριακή φόρτωση με shift left και προσθήκη νέου chunk
             key_reg <= key_reg(111 downto 0) & key_in16; 
@@ -65,7 +65,10 @@ begin
         plain_rd <= '0';    
         plain_ready   <= '0';
     elsif rising_edge(clk) then
-        -- plain_ready <= '0';  -- Προκαθορισμένη τιμή
+        if fsm_control = "011" then
+            plain_rd <= '0';
+            plain_ready <= '0';
+        end if;
         if (load_plain = '1' and plain_rd = '0') then
             -- Σειριακή φόρτωση με shift left και προσθήκη νέου chunk
             plaintext_reg <= plaintext_reg(47 downto 0) & plain_in16; 

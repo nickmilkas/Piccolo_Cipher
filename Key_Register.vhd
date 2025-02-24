@@ -79,22 +79,24 @@ begin
                                 valid_lines := 27;
                             end if;
                             
-                            -- Manipulate the registers array
-                            registers(0) <= registers(valid_lines - 1);
-                            registers(valid_lines - 1) <= registers(0);
-                            
-                            counter := 0;
-                            for i in 1 to valid_lines - 2 loop
-                                if (i mod 2) = 0 then
-                                    registers(i) <= registers(valid_lines - 2 - counter);
-                                else
-                                    temp_rk := registers(valid_lines - 2 - counter)(15 downto 0) &
-                                               registers(valid_lines - 2 - counter)(31 downto 16);
-                                    registers(i) <= temp_rk;
-                                end if;
-                                counter := counter + 1;
-                            end loop;
-                            enc_dec_fin_int <= '1';
+                            if enc_dec_fin_int = '0' then
+                                -- Manipulate the registers array
+                                registers(0) <= registers(valid_lines - 1);
+                                registers(valid_lines - 1) <= registers(0);
+                                
+                                counter := 0;
+                                for i in 1 to valid_lines - 2 loop
+                                    if (i mod 2) = 0 then
+                                        registers(i) <= registers(valid_lines - 2 - counter);
+                                    else
+                                        temp_rk := registers(valid_lines - 2 - counter)(15 downto 0) &
+                                                registers(valid_lines - 2 - counter)(31 downto 16);
+                                        registers(i) <= temp_rk;
+                                    end if;
+                                    counter := counter + 1;
+                                end loop;
+                                enc_dec_fin_int <= '1';
+                            end if;
                         end if;
                     end if;  
                 end if;  
