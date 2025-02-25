@@ -14,7 +14,6 @@ entity key_reg is
         mode          : in std_logic_vector(1 downto 0);
         write_fin     : out std_logic;
         enc_dec_fin   : out std_logic;
-        registers_out : out reg_array(0 to 32);
         out_initial   : out two_line_array;
 		out_final     : out two_line_array;
         out_iter1     : out rk_array;  
@@ -31,7 +30,6 @@ architecture key_reg_arch of key_reg is
 begin
     write_fin     <= write_fin_int;
     enc_dec_fin   <= enc_dec_fin_int;
-    registers_out <= registers;
 
     --------------------------------------------------------------------
     -- Process: Data Collection and Encryption/Decryption Operation
@@ -49,6 +47,8 @@ begin
                 write_fin_int   <= '0';
                 enc_dec_fin_int <= '0';
             else
+				-- In this mode it writes the data in the key register and
+				-- then it reallocates if decryption is occured 
                 if internal_mode = "001" then
                     if write_fin_int = '0' then
                         temp_reg := registers;
@@ -80,7 +80,7 @@ begin
                             end if;
                             
                             if enc_dec_fin_int = '0' then
-                                -- Manipulate the registers array
+                                
                                 registers(0) <= registers(valid_lines - 1);
                                 registers(valid_lines - 1) <= registers(0);
                                 
@@ -109,7 +109,7 @@ begin
     --------------------------------------------------------------------
     process(clk, rst)
     variable valid_lines_local: integer;
-    variable temp_iter2       : rk_array;  -- rk_array type from iterative_stage_pkg
+    variable temp_iter2       : rk_array;  
 		begin
 			if rising_edge(clk) then
 				if internal_mode >= "010" then
@@ -133,6 +133,7 @@ begin
 						out_final(0) <= registers(valid_lines_local - 2);
 						out_final(1) <= registers(valid_lines_local - 1);
 						
+						-- Ouput of the iterative stages
 						for i in 0 to 14 loop
 							out_iter1(i) <= registers(2 + i);
 						end loop;
