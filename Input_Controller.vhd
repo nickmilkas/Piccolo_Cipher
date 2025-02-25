@@ -65,10 +65,18 @@ begin
         plain_rd <= '0';    
         plain_ready   <= '0';
     elsif rising_edge(clk) then
-        if fsm_control = "011" then
+        if fsm_control = "110" then
             plain_rd <= '0';
             plain_ready <= '0';
         end if;
+        -- if (fsm_control = "011" and plain_counter = 3) then
+        --     plain_counter <= 0;
+        --     plain_rd <= '1';
+        --     plain_ready <= '1';
+        -- elsif plain_counter < 3 then
+        --     plain_counter <= plain_counter + 1;
+        -- end if;
+
         if (load_plain = '1' and plain_rd = '0') then
             -- Σειριακή φόρτωση με shift left και προσθήκη νέου chunk
             plaintext_reg <= plaintext_reg(47 downto 0) & plain_in16; 

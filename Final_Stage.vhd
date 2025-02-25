@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+library work;
 use work.initial_stage_pkg.all;
 
 entity final_stage is 

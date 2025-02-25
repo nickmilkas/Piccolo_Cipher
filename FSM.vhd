@@ -14,7 +14,7 @@ entity fsm_diagram is
 end fsm_diagram;
 
 architecture fsm_diagram_arch of fsm_diagram is
-    type state_type is (A, A_wait, B, C, D, E, E_wait);
+    type state_type is (A, A_wait, B, C, D_wait, D, E, E_wait);
     signal state          : state_type;
     signal counter        : std_logic_vector(3 downto 0) := (others => '0');
     signal shift_signal   : std_logic := '0';
@@ -56,7 +56,7 @@ begin
                     shift_signal <= '1';
                     if c_delay_counter = C_DELAY - 1 then
                         counter         <= (others => '0');
-                        state           <= D;
+                        state           <= D_wait;
                         c_delay_counter <= 0;
 					
 						
@@ -65,7 +65,10 @@ begin
                         state           <= C;
 						
                     end if;
-                    
+
+                when D_wait =>
+                    state <= D;
+                
                 when D =>
                     selector <= '1';
 					shift_signal <= '0';
@@ -86,7 +89,7 @@ begin
                         selector <= '0';
                         shift_signal <= '0';
                         counter      <= (others => '0');
-						state <= D;
+						state <= D_wait;
                     else
                         c_delay_counter2 <= c_delay_counter2 + 1;
 						shift_signal <= '1';
@@ -108,10 +111,11 @@ begin
             when A_wait => fsm_out <= "111";
             when B      => fsm_out <= "001";
             when C      => fsm_out <= "010";
+            when D_wait => fsm_out <= "110";
             when D      => fsm_out <= "011";
             when E_wait => fsm_out <= "100";
             when E      => fsm_out <= "101";
-        end case;
+        end case;   
         
         count_out <= counter;
         shift     <= shift_signal;

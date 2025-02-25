@@ -79,6 +79,7 @@ architecture Piccolo of main is
             mode          : in std_logic_vector(1 downto 0);
             write_fin     : out std_logic;
             enc_dec_fin   : out std_logic;
+            registers_out : out reg_array;
             out_initial   : out two_line_array;
             out_iter1  	  : out rk_array;
             out_iter2  	  : out rk_array;
@@ -135,7 +136,7 @@ architecture Piccolo of main is
 	end component;
 	
     
-    signal register_file: reg_array(0 to 32);
+    signal register_file: reg_array;
     signal array_initial: two_line_array;
     signal array_iterative1: rk_array;
     signal array_iterative2: rk_array;
@@ -185,7 +186,7 @@ begin
    
     file_key_register: key_reg port map(
         clk => clk, rst => reset, write_data => selected_write_data, internal_mode => fsm_control, mode => mode, 
-        write_fin => write_fin, enc_dec_fin => enc_dec_fin, out_initial => array_initial, 
+        write_fin => write_fin, enc_dec_fin => enc_dec_fin, registers_out => register_file, out_initial => array_initial, 
         out_iter1 => array_iterative1, out_iter2 => array_iterative2, out_final => array_final
     );
 
