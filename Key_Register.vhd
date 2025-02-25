@@ -86,7 +86,7 @@ begin
                                 
                                 counter := 0;
                                 for i in 1 to valid_lines - 2 loop
-                                    if (i mod 2) = 0 then
+                                    if ((i-1) mod 2) = 0 then
                                         registers(i) <= registers(valid_lines - 2 - counter);
                                     else
                                         temp_rk := registers(valid_lines - 2 - counter)(15 downto 0) &
@@ -119,7 +119,7 @@ begin
 						out_iter2   <= (others => (others => '0'));
 						out_final   <= (others => (others => '0'));
 					else
-						if mode(1) = '1' then
+						if mode(0) = '1' then
 							valid_lines_local := 33;
 						else
 							valid_lines_local := 27;
