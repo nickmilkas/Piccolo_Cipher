@@ -106,32 +106,42 @@ begin
 
 	U3: iterative_register port map( clk => clk, rst => reset, input_data => after_rp, output_data => reg_q);
 	
-	-- Concurrent assignment for iteration count
-	iteration_count <= iteration_count + 1 when (internal_mode = "011" and iteration_count < max_iterations) else 0 when reset = '1' else iteration_count;
 
-	-- Concurrent assignment for new_modified
-	new_modified <= reg_q when (internal_mode = "011") else (others => 'U');
+	process(clk, reset)
+		variable max_reached : boolean := false;
+		variable last_valid_result : std_logic_vector(63 downto 0) := (others => 'U');
+	begin
+		if reset = '1' then
+			new_modified <= (others => 'U');
+			iteration_count <= 0;
+			max_reached := false;
+			last_valid_result := (others => 'U');
+		elsif rising_edge(clk) then
+			if (internal_mode = "011" or internal_mode = "100") then
+				if not max_reached then
+					if iteration_count < max_iterations then
+						
+						iteration_count <= iteration_count + 1;
+						new_modified <= reg_q;
+					else
+				 
+						max_reached := true;
+						last_valid_result := reg_q;
+						new_modified <= reg_q;  
+					end if;
+				else
+				   
+					new_modified <= last_valid_result;
+				end if;
+			else
+				new_modified <= (others => 'U');
+				iteration_count <= 0;
+				max_reached := false;
+				last_valid_result := (others => 'U');
+			end if;
+		end if;
+	end process;
 
-	
-    -- process(clk, reset)
-    -- begin
-        -- if reset = '1' then
-            -- new_modified <= (others => 'U');  
-            -- iteration_count <= 0;
-        -- elsif rising_edge(clk) then
-            -- if internal_mode = "011" then
-				-- new_modified <= reg_q;
-                -- if iteration_count < max_iterations then
-                    -- iteration_count <= iteration_count + 1;
-                -- end if;
-				
-                -- if iteration_count = max_iterations then
-                    -- new_modified <= reg_q;
-                -- end if;
-            -- end if;
-        -- end if;
-    -- end process;
-	
 	
 
 end iterative_stage_arch;

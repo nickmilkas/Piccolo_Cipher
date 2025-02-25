@@ -14,18 +14,20 @@ end reg_nbit;
 
 architecture reg_nbit_arch of reg_nbit is
     signal input_store : std_logic_vector(WIDTH-1 downto 0);
-begin
-    process(clk, rst)
-    begin
-        if rst = '1' then
-            output_bits <= (others => 'U');
-        elsif rising_edge(clk) then
-            input_store <= input_bits;
-			if shift = '1' then
-				output_bits <= input_store;
+	begin
+		process(clk, rst)
+		begin
+			if rst = '1' then
+				output_bits <= (others => 'U');
+			elsif rising_edge(clk) then
+				input_store <= input_bits;
+				if shift = '1' then
+					output_bits <= input_store;
+				end if;
 			end if;
-        end if;
+			end process;
+
                 
-            
-    end process;
+           
+   
 end reg_nbit_arch;

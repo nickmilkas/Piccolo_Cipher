@@ -14,11 +14,13 @@ entity fsm_diagram is
 end fsm_diagram;
 
 architecture fsm_diagram_arch of fsm_diagram is
-    type state_type is (A, A_wait, B, C, D, E);
+    type state_type is (A, A_wait, B, C, D, E, E_wait);
     signal state          : state_type;
     signal counter        : std_logic_vector(3 downto 0) := (others => '0');
     signal shift_signal   : std_logic := '0';
     signal c_delay_counter: integer := 0;
+    signal c_delay_counter2: integer := 0;
+
     constant C_DELAY      : integer := 5;
 begin
     process(clk, reset)
@@ -28,7 +30,7 @@ begin
             counter         <= (others => '0');
             shift_signal    <= '0';
             c_delay_counter <= 0;
-            selector        <= '0';  -- Initialize selector
+            selector        <= '0'; 
         elsif rising_edge(clk) then
             
             shift_signal <= '0';
@@ -70,16 +72,30 @@ begin
                     if unsigned(counter) < 14 then  
                         counter <= std_logic_vector(unsigned(counter) + 1);
                     else
-                        state <= E;
-						shift_signal <= '1';
+                        state <= E_wait;
+						-- shift_signal <= '1';
 						selector <='0';
                     end if;
-                    
+
+                when E_wait =>
+                    state <= E;
+
                 when E =>
-                    selector <= '1';
-					shift_signal <= '0';
-                    counter      <= (others => '0');
-                    state       <= D; 
+                    if c_delay_counter2 = 1 then
+                        c_delay_counter2 <= 0;
+                        selector <= '0';
+                        shift_signal <= '0';
+                        counter      <= (others => '0');
+						state <= D;
+                    else
+                        c_delay_counter2 <= c_delay_counter2 + 1;
+						shift_signal <= '1';
+                        state       <= E; 
+                    end if;
+                    -- selector <= '1';
+					-- shift_signal <= '0';
+                    -- counter      <= (others => '0');
+                    -- state       <= D; 
             end case;
         end if;
     end process;
@@ -93,7 +109,8 @@ begin
             when B      => fsm_out <= "001";
             when C      => fsm_out <= "010";
             when D      => fsm_out <= "011";
-            when E      => fsm_out <= "100";
+            when E_wait => fsm_out <= "100";
+            when E      => fsm_out <= "101";
         end case;
         
         count_out <= counter;
